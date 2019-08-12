@@ -1,0 +1,90 @@
+{
+    "422056965041291264-535948556801015818-882505941": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 7
+    },
+    "422056965041291264-535948556801015818-223932650": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 8
+    },
+    "422056965041291264-535948556801015818-624140212": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 9
+    },
+    "422056965041291264-535948556801015818-850148575": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": null,
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 10
+    },
+    "422056965041291264-535948556801015818-741791746": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 11
+    },
+    "422056965041291264-535948556801015818-378762571": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 12
+    },
+    "422056965041291264-535948556801015818-379340945": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 13
+    },
+    "422056965041291264-535948556801015818-942867474": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "emp <@535948556801015818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 14
+    },
+    "422056965041291264-535948556801015818-560700155": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "818> test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 15
+    },
+    "422056965041291264-535948556801015818-777447608": {
+        "username": "testtest",
+        "userID": "535948556801015818",
+        "reason": "test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 16
+    },
+    "422056965041291264-493469776782426122-263224999": {
+        "username": "Frankenbot Dev",
+        "userID": "493469776782426122",
+        "reason": " test",
+        "warnedBy": "Steev",
+        "channel": "franken-bot-todo-list",
+        "warns": 1
+    }
+}
