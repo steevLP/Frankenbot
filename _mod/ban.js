@@ -29,7 +29,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
     //Daten Definition
     let bChannel = message.guild.channels.find(`name`, settings.incedents);
     let bUser = message.guild.member(message.mentions.users.first() || message.guild.members.get(args[1]));
-    let bReason = args.join(" ").slice(29);
+    let bReason = args.join(" ").slice(31);
 
     //Errorhandling
     if (!bChannel) return message.channel.send(channelError);

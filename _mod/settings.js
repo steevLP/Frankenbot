@@ -43,7 +43,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
             //Spamchannel Setting
             if (args[0] == "spam") {
-                server.query(`UPDATE settings SET spam='${args[1]}'`, (err,results,fields) => {
+                server.query({
+                    sql: `UPDATE settings SET spam= ?`,
+                    timeout: 10000,
+                    values: [args[1]]
+                }, (err,results,fields) => {
                     if(err) throw err;
 
                     let success = new Discord.RichEmbed()
@@ -90,7 +94,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
             //Logchannel Setting
             if (args[0] == "incedents") {
-                server.query(`UPDATE settings SET incedents='${args[1]}'`, (error,results,fields) => {
+                server.query({
+                    sql: `UPDATE settings SET incedents= ?`,
+                    timeout: 10000,
+                    values: [args[1]]
+                }, (error,results,fields) => {
                     if(error) throw error;
 
                     let icon = "✅";
@@ -107,7 +115,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
             //WarnMessage
             if (args[0] == "warnMessage") {
-                server.query(`UPDATE settings SET warnMessage='${args[1]}'`, (error,results,fields) => {
+                server.query({
+                    sql: `UPDATE settings SET warnMessage= ?`,
+                    timeout: 10000,
+                    values: [args[1]]
+                }, (error,results,fields) => {
                     if(error) throw error;
 
                     let success = new Discord.RichEmbed()
@@ -122,7 +134,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
             //Music Channel Setting
             if (args[0] == "admincommands") {
-                server.query(`UPDATE settings SET admincommands='${args[1]}'`, (error,results,fields) => {
+                server.query({
+                    sql: `UPDATE settings SET admincommands= ?`,
+                    timeout: 10000,
+                    values: [args[1]]   
+                }, (error,results,fields) => {
                     if(error) throw error;
 
                     let success = new Discord.RichEmbed()
@@ -137,7 +153,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
             //Vorfall Archive setting
             if (args[0] == "serverName") {
-                server.query(`UPDATE settings SET serverName='${args[1]}'`, (error,results,fields) => {
+                server.query({
+                    sql: `UPDATE settings SET serverName= ?`,
+                    timeout: 10000,
+                    values: [args[1]]  
+                }, (error,results,fields) => {
                     if(error) throw error;
 
 
@@ -153,7 +173,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
             //Prefix Setting
             if (args[0] == "prefix") {
-                server.query(`UPDATE settings SET prefix='${args[1]}'`, (error,results,fields) => {
+                server.query({
+                    sql: `UPDATE settings SET prefix= ?`,
+                    timeout: 10000,
+                    values: [args[1]]  
+                }, (error,results,fields) => {
                     if(error) throw error;
 
                     let success = new Discord.RichEmbed()

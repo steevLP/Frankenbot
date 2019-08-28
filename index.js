@@ -61,21 +61,31 @@ bot.on("ready", async () => {
 
     setInterval(()=>{
         bot.guilds.forEach(guild => {
-            console.log(Date.now());
-            console.log(guild.id);
-            server.query(`SELECT * FROM bans WHERE banUntil <= '${Date.now()}' AND serverid = '${guild.id}'`, (error, results, fields) => {
-                if(results.length > 0){
-                    console.log(Date.now());
-                    guild.unban(results[0].uuid);
-                    server.query(`DELETE FROM bans WHERE serverid = '${guild.id}' AND uuid = '${results[0].uuid}'`, (error, results, fields) => {
-                        if(error) throw error;
-                    });
-                }else{
+            server.query({
+                sql: `SELECT * FROM bans WHERE banUntil <= ?`,
+                timeout: 10000,
+                values:[Date.now()]
+            }, (error, results, fields) => {
+                if(typeof(results.length) != undefined){
                     return;
+                }else{
+                    if(results.length > 0){
+                        console.log('Hit');
+                        guild.unban(results[0].uuid).then(user => console.log(`Unbanned ${user} from ${guild}`)).catch(console.error());
+                        server.query({
+                            sql:`DELETE FROM bans WHERE serverid = ? AND uuid = ?`,
+                            timeout: 10000,
+                            values: [guild.id, results[0].uuid]
+                        }, (error, results, fields) => {
+                            if(error) throw error;
+                        });
+                    }else{
+                        return;
+                    }
                 }
             });
         });
-    },1000);
+    },100);
 });
 
 //Spam filter
@@ -110,17 +120,15 @@ bot.on('message', async message => {
     if (message.author.bot) return;
     if (message.channel.type === "dm") return;
 
-    setTimeout((guild) => {
-        server.query(`SELECT * FROM stats'`,(error, results, fields) => {
-            //console.log(message.guild.members);
-        });
-    }, 100);
-
     //Settings Creation on handling of the nospam filter
-    server.query(`SELECT * FROM settings WHERE serverid='${message.guild.id}'`,(error, results, fields) => {
+    server.query({
+        sql: `SELECT * FROM settings WHERE serverid= ?`,
+        timeout:10000,
+        values:[message.guild.id]
+    },(error, results, fields) => {
 
         //If no result gets found
-        if(typeof(results.length) == undefined){
+        if(results.length == 0){
             //Create new Settings for that server
             server.query('INSERT INTO settings SET ?', {
                 spam: "general",
@@ -133,8 +141,10 @@ bot.on('message', async message => {
                 prefix: botconfig.prefix
             }, (error, results, field) => {
                 if(error) throw error;
+                return;
             });            
         }else{
+            console.log(results.length);
             //Antispam
             if (results[0].nospam === "on") {
 
@@ -159,7 +169,11 @@ bot.on('message', async message => {
     //User Stats
 
     //Select everything from stats
-    server.query(`SELECT * FROM stats WHERE serverid='${message.guild.id}' AND uuid='${message.author.id}'`, (error, results, field) => {
+    server.query({
+        sql: `SELECT * FROM stats WHERE serverid= ? AND uuid= ?`,
+        timeout: 100000,
+        values:[message.guild.id, message.author.id]
+    }, (error, results, field) => {
         if(error) throw error;
 
         //If no result gets found
@@ -202,7 +216,11 @@ bot.on('message', async message => {
             var newMsgs = msgs + 1;
 
             //Update MSGS And XP
-            server.query(`UPDATE stats set xp=${newXP}, msgs=${newMsgs} WHERE serverid=${message.guild.id} AND uuid='${message.author.id}'`,(error, results, fields) => {
+            server.query({
+                sql: `UPDATE stats set xp= ?, msgs= ? WHERE serverid= ? AND uuid= ?`,
+                timeout: 10000,
+                values: [newXP,newMsgs,message.guild.id,message.author.id]
+            },(error, results, fields) => {
                 if(error) throw error;
             });
 
@@ -210,7 +228,11 @@ bot.on('message', async message => {
                 let newlvl = curlvl + 1;
 
                 //Update Level
-                server.query(`UPDATE stats SET level=${newlvl} WHERE serverid=${message.guild.id} AND uuid='${message.author.id}'`,(error, results, fields) => {
+                server.query({
+                    sql:`UPDATE stats SET level= ? WHERE serverid= ? AND uuid= ?`,
+                    timeout: 10000,
+                    values: [newlvl, message.guild.id, message.author.id]
+                },(error, results, fields) => {
                     if(error) throw error;
             
                     //Build and Send Level UP Embed
@@ -245,20 +267,27 @@ bot.on('message', async message => {
         }
     });
 
-    server.query(`SELECT * FROM settings WHERE serverid='${message.guild.id}'`,(error, results, fields) => {
+    server.query({
+        sql: `SELECT * FROM settings WHERE serverid= ?`,
+        timeout: 10000,
+        values: [message.guild.id]
+    },(error, results, fields) => {
+        if(results.length == 0){
+            return message.channel.send('Einstellungen wurden eingerichtet! \n Bitte versuche es erneut!');
+        }else if(results.length > 0){
+            //Command Handler & Message Handler
+            let prefix = results[0].prefix;
 
-        //Command Handler & Message Handler
-        let prefix = results[0].prefix;
+            if (!message.content.startsWith(prefix)) return;
 
-        if (!message.content.startsWith(prefix)) return;
+            let messageArray = message.content.split(" ");
+            let cmd = messageArray[0];
+            let args = messageArray.slice(1);
+            let commandfile = bot.commands.get(cmd.slice(prefix.length));
+            let settings = results[0];
 
-        let messageArray = message.content.split(" ");
-        let cmd = messageArray[0];
-        let args = messageArray.slice(1);
-        let commandfile = bot.commands.get(cmd.slice(prefix.length));
-        let settings = results[0];
-
-        if (commandfile) commandfile.run(bot, message, args, server, settings);
+            if (commandfile) commandfile.run(bot, message, args, server, settings);
+        }
     });
 
 });

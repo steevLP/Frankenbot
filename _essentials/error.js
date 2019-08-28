@@ -63,7 +63,7 @@ module.exports = {
     'argumentToHigh': function(method, argument, maximumSize){
         let embed = new RichEmbed()
             .setColor(red)
-            .addField(`Fehler: Die Option ${argument} von ${method} kann nicht über ${maximumSize} sein!`);
+            .setTitle(`Fehler: Die Option ${argument} von ${method} kann nicht über ${maximumSize} sein!`);
         return embed;
     }
 }

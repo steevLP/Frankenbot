@@ -17,7 +17,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
     if(!message.member.hasPermission("KICK_MEMBERS")) return message.channel.send(invalidPermission);    
 
     //Command Check
-    if(!args[0] ||args[0] === "help") return message.channel.send(cmdHelp);
+    if(!args[0] || args[0] === "help") return message.channel.send(cmdHelp);
     
     message.delete();
 
@@ -47,7 +47,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
             //Warn Vergabe & Speicherung
             
     //Select the warns option from the specific user
-    server.query(`SELECT warns FROM stats WHERE serverid='${message.guild.id}' AND uuid='${wUser.id}'`, (error, results, field) => {
+    server.query({
+        sql: `SELECT warns FROM stats WHERE serverid= ? AND uuid= ?`,
+        timeout: 10000,
+        values: [message.guild.id, wUser.id] 
+    }, (error, results, field) => {
             if(error) throw error;
             
             console.log(results[0]);
@@ -57,7 +61,11 @@ module.exports.run = async (bot, message, args, server, settings) => {
             let newWarns = warns += 1;
             
             //Insert the updated Value
-            server.query(`UPDATE stats SET warns='${newWarns}' WHERE serverid='${message.guild.id}' AND uuid='${wUser.id}'`,(error, results, fields)=>{
+            server.query({
+                sql: `UPDATE stats SET warns= ? WHERE serverid= ? AND uuid= ?`,
+                timeout: 10000,
+                values: [newWarns, message.guild.id, wUser.id]
+            },(error, results, fields)=>{
                 if(error) throw error;
             });
 	});
@@ -76,8 +84,16 @@ module.exports.run = async (bot, message, args, server, settings) => {
     }); 
     
             //Warn Messaging
-            server.query(`SELECT * FROM settings WHERE serverID=${message.guild.id}`,(error, settings, fields) =>{
-                server.query(`SELECT * FROM stats WHERE uuid=${wUser.id}`,(error, stats, fields)=>{
+            server.query({
+                sql: `SELECT * FROM settings WHERE serverID= ?`,
+                timeout: 10000,
+                values: [message.guild.id]
+            },(error, settings, fields) =>{
+                server.query({
+                    sql: `SELECT * FROM stats WHERE uuid= ?`,
+                    timeout: 10000,
+                    values: [wUser.id]
+                },(error, stats, fields)=>{
                     
                     console.log(stats[0]);
                     //Warn Embed Server

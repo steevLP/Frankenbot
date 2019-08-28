@@ -1,9 +1,5 @@
-const {
-    RichEmbed
-} = require('discord.js');
-const {
-    green
-} = require('../json/botconfig.json');
+const { RichEmbed } = require('discord.js');
+const { green } = require('../json/botconfig.json');
 module.exports.run = async (bot, message, args, server, settings) => {
     message.delete();
 
