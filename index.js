@@ -59,30 +59,93 @@ bot.on("ready", async () => {
     console.log(`[sys-dsc]: ${bot.user.username} Ist auf ${bot.guilds.size} Servern Online!`);
     bot.user.setActivity("!help", { type: "PLAYING" });
 
+    //Unpunish Mechanism
     setInterval(()=>{
         bot.guilds.forEach(guild => {
+            let conv_date = Number(Date.now());
+
+            //Unbanning Tempbanned Users
             server.query({
-                sql: `SELECT * FROM bans WHERE banUntil <= ?`,
+                sql: `SELECT * FROM bans WHERE state = 'active' AND convert(banUntil, INT) <= ?`,
                 timeout: 10000,
-                values:[Date.now()]
-            }, (error, results, fields) => {
-                if(typeof(results.length) != undefined){
-                    return;
-                }else{
-                    if(results.length > 0){
-                        console.log('Hit');
-                        guild.unban(results[0].uuid).then(user => console.log(`Unbanned ${user} from ${guild}`)).catch(console.error());
+                values:[conv_date]
+            }, (error, bans, fields) => {
+                if(typeof(bans.length) === undefined) return;
+                    if(bans.length <= 0) return; 
+
+                        guild.unban(bans[0].uuid).then(user => console.log(`Unbanned ${user} from ${guild}`)).catch(console.error());
+
+                        //Flag Ban as handled
                         server.query({
-                            sql:`DELETE FROM bans WHERE serverid = ? AND uuid = ?`,
+                            sql: `UPDATE bans set state = 'handled' WHERE serverid= ? AND uuid= ?`,
+                            timeout: 10000,
+                            values: [guild.id, bans[0].uuid]
+                        }, (error, bUpdate, fields) => {
+                            if(error) throw error;
+                        });
+            });
+
+            //Remove Warn From tempwarned Users
+            server.query({
+                sql: `SELECT * FROM warns WHERE state = 'active' AND convert(warnUntil, INT) <= ?`,
+                timeout: 10000,
+                values:[conv_date]
+            }, (error, warns, fields) => {
+                if(typeof(warns.length) === undefined) {return;}else{ 
+                    if(warns.length <= 0) return;
+                        
+                        server.query({
+                            sql: `SELECT * FROM stats WHERE serverid= ? AND uuid= ?`,
+                            timeout: 10000,
+                            values: [guild.id, warns[0].uuid]
+                        }, (error, warns, fields) => {
+                            if(error) throw error;
+
+                            //Edit Current Warns
+                            let editedWanrs = warns[0].warns - 1;
+
+                            //Aplying new Warn Amount
+                            server.query({
+                                sql: `UPDATE stats set warns= ? WHERE serverid= ? AND uuid= ?`,
+                                timeout: 10000,
+                                values: [editedWanrs, guild.id, results[0].uuid]
+                            }, (error, wUpdate, fields) => {
+                                if(error) throw error;
+                            });
+                        });
+
+                        //Flag Warn as handled
+                        server.query({
+                            sql: `UPDATE warns set state = 'handled' WHERE serverid= ? AND uuid= ?`,
                             timeout: 10000,
                             values: [guild.id, results[0].uuid]
                         }, (error, results, fields) => {
                             if(error) throw error;
                         });
-                    }else{
-                        return;
                     }
-                }
+            });
+
+            //Unmute Tempmuted Users
+            server.query({
+                sql: `SELECT * FROM mutes WHERE state = 'active' AND convert(muteUntil, INT) <= ?`,
+                timeout: 10000,
+                values:[conv_date]
+            }, (error, results, fields) => {
+                if(typeof(results.length) === undefined){ return; }
+                    if(results.length <= 0) return;
+
+                    //Find Role and Remove it From User
+                    let muteRole = guild.channels.find(`name`, "🔇Muted");
+                    guild.member.removeRole(muteRole, results[0].reason).then(user => console.log(`Unmuted ${user} from ${guild}`)).catch(console.error());
+
+                    //Flag Mute as handled
+                    server.query({
+                        sql: `UPDATE mutes set state = 'handled' WHERE serverid= ? AND uuid= ?`,
+                        timeout: 10000,
+                        values: [guild.id, results[0].uuid]
+                    }, (error, results, fields) => {
+                        if(error) throw error;
+                    });
             });
         });
     },100);
