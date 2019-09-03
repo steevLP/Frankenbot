@@ -1,15 +1,8 @@
-const {
-    RichEmbed
-} = require('discord.js');
-const {
-    red,
-    yellow
-} = require('../json/botconfig.json');
+const { RichEmbed } = require('discord.js');
+const { red, yellow } = require('../json/botconfig.json');
 const fs = require('fs');
 const ms = require('ms');
-const {
-    file
-} = require('watchbotapi');
+const { file } = require('watchbotapi');
 
 const error = require('../_essentials/error.js');
 

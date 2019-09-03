@@ -1,11 +1,10 @@
 const { RichEmbed } = require('discord.js');
 const { red, yellow } = require('../json/botconfig.json');
-const ms = require('ms');
 
-const {randomize} = require('watchbotapi');
+const {randomize, time} = require('watchbotapi');
 
 let error = require('../_essentials/error.js');
-let timestamp = require('../_essentials/timestamp.js');
+let h = require('./history');
 
 module.exports.run = async (bot, message, args, server, settings) => {
     /**
@@ -17,6 +16,8 @@ module.exports.run = async (bot, message, args, server, settings) => {
      * Ob der zu bannende Nutzer selbst nicht mit der Berechtigung ausgestattet ist
      * Ob der bannende Nutzer Selbst die Berechtigung hat
      */
+
+    h.insert(server);
 
     //Error handling
     let channelError = error.channelError('ban');
@@ -62,7 +63,6 @@ module.exports.run = async (bot, message, args, server, settings) => {
                 .setColor(red)
                 .setTitle('Du wurdest gebannt')
                 .addField("Du wurdest gebannt von", `${message.author} Mit der ID: ${message.author.id}`)
-                .addField("Im Channel", message.channel)
                 .addField("Uhrzeit", message.createdAt)
                 .addField("Mit dem Grund", bReason);
             bUser.send(UbanEmbed); // Sendet die ban Benachrichtigung
@@ -74,30 +74,6 @@ module.exports.run = async (bot, message, args, server, settings) => {
             break;
         case "temp":
 
-        /**
-         * converts array of duration codes to seconds
-         * supported types: s,m,h,d,w,M,y
-         * @param {Array} durarr array of duration codes ['6d','4w']
-         * @returns sum of input duration codes in seconds
-         */
-        function hmstosecs(durarr) {
-            let secs = 0
-            durarr.forEach(arg => {
-                num = arg.replace(/.$/,'')*1
-                typ = arg.replace(/^\d+/,'')
-                switch (typ) {
-                    case 's': secs += 1000 * num; break;
-                    case 'm': secs += 1000 * num *60; break;
-                    case 'h': secs += 1000 * num * 60 * 60; break;
-                    case 'd': secs += 1000 * num * 60 * 60 * 24; break;
-                    case 'w': secs += 1000 * num * 60 * 60 * 24 * 7; break;
-                    case 'M': secs += 1000 * num * 60 * 60 * 24 * 30; break;
-                    case 'y': secs += 1000 * num * 60 * 60 * 24 * 365; break;
-                }
-            });
-            return secs
-        }
-
         // Definiert Embed für den Incedents Channel
             let StbanEmbed = new RichEmbed()
                 .setColor(red)
@@ -105,6 +81,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
                 .addField("Gebannt von", `${message.author} Mit der ID: ${message.author.id}`)
                 .addField("Gebannt in", message.channel)
                 .addField("Bannung Zeit", message.createdAt)
+                .addField("Ban Zeit", time.convertToString([args[2]]))
                 .addField("Bannungs Grund", bReason);
             bChannel.send(StbanEmbed); // Sendet das embed in den Incedents Channel
 
@@ -113,40 +90,30 @@ module.exports.run = async (bot, message, args, server, settings) => {
                 .setColor(red)
                 .setTitle('Du wurdest gebannt')
                 .addField("Du wurdest gebannt von", `${message.author}`)
-                .addField("Im Channel", message.channel)
                 .addField("Uhrzeit", message.createdAt)
+                .addField("Ban Zeit", time.convertToString([args[2]]))
                 .addField("Mit dem Grund", bReason);
             bUser.send(UtbanEmbed); // Sendet die ban Benachrichtigung
 
             // Bannt den Nutzer 
             setTimeout(function () {
                 
-                console.log(bUser.id);
-                console.log(bUser.user.username);
-                console.log(message.guild.id);
-
-                console.log(Date.now());
-                console.log(hmstosecs([args[2]])*1000);
-
-                console.log(Date.now() + (hmstosecs([args[2]])*1000));
-                console.log(bReason);
-
                 let UUID = message.guild.id+"-"+bUser.id+"-"+randomize.single('999999999');
 
                 server.query('INSERT INTO bans SET ?', {
-                    name: bUser.user.username, 
-                    uuid: bUser.id, 
                     serverid: message.guild.id,
-                    banUntil: Date.now() + hmstosecs([args[2]]), 
-                    reason: bReason,
-                    operator: message.author.username,
+                    uuid: bUser.id, 
+                    duration: Date.now() + time.convertToMS([args[2]]),
+                    punid: UUID,
                     channel: message.channel,
-                    banID: UUID
+                    operator: message.author.username,
+                    username: bUser.user.username, 
+                    reason: bReason
                 }, (error, results, field) => {
                     message.guild.member(bUser).ban(bReason);
                     if(error) throw error;
                 });            
-            }, ms('1s'));
+            }, 1000);
 
             break;  
     }
