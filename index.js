@@ -95,7 +95,7 @@ bot.on("ready", async () => {
                     if(bans.length <= 0) return; 
                     if(guild.id === bans[0].serverid){
                         guild.unban(bans[0].uuid).then(user => console.log(`Unbanned ${user} from ${guild}`)).catch(console.error());
-                        }
+                    }
 
                         //Flag Ban as handled
                         server.query({
@@ -114,12 +114,12 @@ bot.on("ready", async () => {
                 values:[conv_date]
             }, (error, results, fields) => {
                 if(typeof(results.length) === undefined){ return; }
-                    if(results.length <= 0) return;
+                if(results.length <= 0) return;
 
-                    if(guild.id === bans[0].serverid){
+                    if(guild.id === results[0].serverid){
                         //Find Role and Remove it From User
-                        let muteRole = guild.channels.find(`name`, "🔇Muted");
-                        guild.member.removeRole(muteRole, results[0].reason).then(user => console.log(`Unmuted ${user} from ${guild}`)).catch(console.error());
+                        let muteRole = guild.roles.find(`name`, "🔇Muted");
+                        guild.member(results[0].uuid).removeRole(muteRole, results[0].reason).then(user => console.log(`Unmuted ${user} from ${guild}`)).catch(console.error());
                     }
                     //Flag Mute as handled
                     server.query({
@@ -137,32 +137,25 @@ bot.on("ready", async () => {
 //Spam filter
 bot.on('message', async message => {
     if (message.author.bot) return;
-    //blacklist
-    let blacklist = file.import('./json/blacklist.json');
+    server.query({
+        sql: 'SELECT * FROM blacklist WHERE serverid= ?',
+        timeout: 10000,
+        values: [message.guild.id]
+    }, (error, results, fields) =>{
+        if(error) throw error;
+        //Blacklist Funktion
+        results.forEach(item => {
+            if (message.content.startsWith("!blacklist")) return;
+            if (message.author.bot) return;
+            if (message.content.toLowerCase().includes(item.word)) {
 
-    //Blacklist Erstellung
-    if (!blacklist[message.guild.id]) {
-        blacklist[message.guild.id] = {
-            list: []
-        };
-        file.save('./json/blacklist.json', blacklist);
-        return;
-    }
-
-    //Blacklist Funktion
-    let spamfilter = blacklist[message.guild.id].list;
-    spamfilter.forEach((item) => {
-        if (message.content.startsWith("!blacklist")) return;
-        if (message.author.bot) return;
-        if (message.content.toLowerCase().includes(item)) {
-
-            message.delete();
-            message.reply(`ein wort in deiner nachricht ist auf diesem discord gesperrt!`).then(msg => {
-                msg.delete(5000);
-            });
-        }
+                message.delete();
+                message.reply(`ein wort in deiner nachricht ist auf diesem discord gesperrt!`).then(msg => {
+                    msg.delete(5000);
+                });
+            }
+        });
     });
-    
     if (message.author.bot) return;
     if (message.channel.type === "dm") return;
 
@@ -190,7 +183,6 @@ bot.on('message', async message => {
                 return;
             });            
         }else{
-            console.log(results.length);
             //Antispam
             if (results[0].nospam === "on") {
 
@@ -324,6 +316,9 @@ bot.on('message', async message => {
             //Command Handler & Message Handler
             let prefix = results[0].prefix;
 
+            let current_datetime = new Date()
+            let date = current_datetime.getDate() + "-" + (current_datetime.getMonth() + 1) + "-" + current_datetime.getFullYear();
+
             if (!message.content.startsWith(prefix)) return;
 
             let messageArray = message.content.split(" ");
@@ -332,7 +327,7 @@ bot.on('message', async message => {
             let commandfile = bot.commands.get(cmd.slice(prefix.length));
             let settings = results[0];
 
-            if (commandfile) commandfile.run(bot, message, args, server, settings);
+            if (commandfile) commandfile.run(bot, message, args, server, settings, date);
         }
     });
 

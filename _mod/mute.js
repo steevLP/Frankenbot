@@ -2,7 +2,7 @@ const { RichEmbed } = require('discord.js');
 const { red, green, yellow } = require('../json/botconfig.json');
 const fs = require('fs');
 const ms = require('ms');
-const { file, randomize } = require('watchbotapi');
+const { file, randomize, time } = require('watchbotapi');
 const error = require('../_essentials/error.js');
 
 module.exports.run = async (bot, message, args, server, settings) => {
@@ -15,84 +15,102 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
     if (!message.member.hasPermission("MANAGE_MESSAGES")) return message.reply(invalidPermission);
 
-
     let mutechannel = message.guild.channels.find(`name`, settings.incedents);
+    let tomute = message.guild.member(message.mentions.users.first() || message.guild.members.get(args[1]));
+    let mReason;
+    let muterole = message.guild.roles.find(`name`, "🔇Muted");
+    let mUUID = message.guild.id + "-" + tomute.id + "-" + randomize.single('999999999');
 
     message.delete();
     
+    if (!tomute) return message.reply(userNotFound);
+    if (tomute.hasPermission("MANAGE_MESSAGES")) return message.reply(userHasPermisson);
+    if (!mutechannel) return message.reply(channelError);
+
+    if (!muterole) {
+        try {
+            muterole = message.guild.createRole({
+                name: "🔇Muted",
+                color: "#000000",
+                permissions: []
+            });
+            message.guild.channels.forEach(async (channel, id) => {
+                await channel.overwritePermissions(muterole, {
+                    SEND_MESSAGES: false,
+                    ADD_REACTIONS: false
+                });
+            });
+        } catch (e) {
+            console.log(e.stack);
+        }
+    }
+
+
     switch (args[0]) {
-        default:
-
-            let tomute = message.guild.member(message.mentions.users.first() || message.guild.members.get(args[0]));
-            let mReason = args.join(" ").slice(25);
-            let mutetime = args[1];
-            let muterole = message.guild.roles.find(`name`, "🔇Muted");
-
-            //Warn Datenbank Definition
-            let mID = file.import('./json/mutes.json');
-            let mUUID = message.guild.id + "-" + tomute.id + "-" + randomize.single('999999999');
-
-            if (!tomute) return message.reply(userNotFound);
-            if (tomute.hasPermission("MANAGE_MESSAGES")) return message.reply(userHasPermisson);
-            if (!mutetime) return message.reply(cmdHelp);
-            if (!mutechannel) return message.reply(channelError);
-
-            if (!muterole) {
-                try {
-                    muterole = message.guild.createRole({
-                        name: "🔇Muted",
-                        color: "#000000",
-                        permissions: []
-                    });
-                    message.guild.channels.forEach(async (channel, id) => {
-                        await channel.overwritePermissions(muterole, {
-                            SEND_MESSAGES: false,
-                            ADD_REACTIONS: false
-                        });
-                    });
-                } catch (e) {
-                    console.log(e.stack);
-                }
-            }
-
-            let muteEmbed = new RichEmbed()
+        case 'perma':
+                mReason = args.join(" ").slice(22);
+                let muteEmbed = new RichEmbed()
                 .setDescription("Mute")
                 .setColor(red)
                 .addField("Gemuted Von", message.author)
                 .addField("Muted User", tomute)
                 .addField("Im Channel", message.channel)
                 .addField("Mute grund", mReason)
-                .addField("Mute Länge", mutetime)
                 .addField("Muteid", mUUID);
             mutechannel.send(muteEmbed);
 
-            if (!mID[mUUID]) {
-                mID[mUUID] = {
-                    username: tomute.user.username,
-                    userID: tomute.id,
-                    reason: mReason,
-                    mutedBy: message.author.username,
-                    channel: message.channel.name,
-                };
-                file.save('./json/mutes.json', mID);
-            }
+            server.query("INSERT INTO mutes SET ?", {
+                serverid: message.guild.id,
+                uuid: tomute.id,
+                duration: "infinit",
+                punid: mUUID,
+                state: "handled",
+                channel: message.channel,
+                operator: message.author.username,
+                username: tomute.user.username,
+                reason: mReason
+            }, (error, results, fields  ) => {
+                if(error) throw error;
+            })
 
             tomute.send(muteEmbed);
             tomute.addRole(muterole.id)
+        break;
+        case 'temp':
+                mReason = args.join(" ").slice(30);
 
-            setTimeout(function () {
-
-                let unMuted = new RichEmbed()
-                    .setColor(green)
-                    .addField(`${tomute.user.username} Wurde entmuted`, `<@${tomute.id}> Du wurdest Entmuted, bitte beachte ab jetzt die Regeln!`);
-
-                tomute.removeRole(muterole.id);
-                message.channel.send(unMuted);
-            }, ms(mutetime));
-            break;
+                let mutetime = args[2];
+                if (!mutetime) return message.reply(cmdHelp);
+    
+                let TEMPmuteEmbed = new RichEmbed()
+                    .setDescription("Mute")
+                    .setColor(red)
+                    .addField("Gemuted Von", message.author)
+                    .addField("Muted User", tomute)
+                    .addField("Im Channel", message.channel)
+                    .addField("Mute grund", mReason)
+                    .addField("Mute Länge", time.convertToString([args[2]]))
+                    .addField("Muteid", mUUID);
+                mutechannel.send(TEMPmuteEmbed);
+    
+                server.query("INSERT INTO mutes SET ?", {
+                    serverid: message.guild.id,
+                    uuid: tomute.id,
+                    duration: Date.now() + time.convertToMS([args[2]]),
+                    punid: mUUID,
+                    channel: message.channel,
+                    operator: message.author.username,
+                    username: tomute.user.username,
+                    reason: mReason
+                }, (error, results, fields  ) => {
+                    if(error) throw error;
+                })
+    
+                tomute.send(TEMPmuteEmbed);
+                tomute.addRole(muterole.id)
+        break;
         case "check":
             //Daten Definition
-            let mutes = file.import('./json/mutes.json');
             let id = args[1];
 
             //Fehler Vergabe
@@ -113,7 +131,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
             mutechannel.send(checkEmbed).then(err => {
                 if (err) throw err;
             });
-            break;
+        break;
     }
 }
 

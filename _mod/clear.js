@@ -22,6 +22,4 @@ module.exports.run = async (bot, message, args, server, settings) => {
     }, ms("500ms"));
 }
 
-module.exports.help = {
-    name: "clear"
-}
+module.exports.help = { name: "clear"; }

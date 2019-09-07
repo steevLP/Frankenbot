@@ -112,47 +112,6 @@ module.exports.run = async (bot, message, args, server, settings) => {
                 })
             });
         break;
-        /*case "temp":  
-            let cond = users[uuid].warns;
-            let tempTime = cPunish[message.guild.id][cond].length
-            //Längen vergabe
-            let length = args[2];
-                    
-            //Fehler Vergabe
-            if(!wChannel) return message.channel.send(channelError);
-            if(!wUser) return message.reply(userNotFound);
-            if(!wReason) return message.channel.send(invalidReason);
-            if(wUser.hasPermission('KICK_MEMBERS')) return message.channel.send(userHasPermisson);
-        
-            wReason = args.join(" ").slice((27 + length.length()));
-        
-            console.log(wReason);
-        
-            //Warn Vergabe & Speicherung
-            users[uuid].warns +=1;
-            file.save('./json/users.json', users);
-            
-            //Warn Messaging
-            
-            //Warn Embed Server
-            let embedServer = new RichEmbed()
-                .setColor(yellow)
-                .setTitle(`${settings[message.guild.id].warnMessage}`)
-                .addField("Verwarnter User", wUser.user.username)
-                .addField('Verwarnt von', message.author.username)
-                .addField('Deine WarnID', wUUID)
-                .addField('Grund', wReason)
-                .setFooter('Sollte die Warn nicht gerechtfertig sein, bitte melde dich mit deiner Warnid im Support');    
-            message.channel.send(embedServer).then(err => {
-                if(err) throw err;
-            }); 
-            
-            
-            setTimeout(function(){
-                users[uuid].warns -=1;
-                file.save('./json/users.json', users);               
-            }, ms(tempTime));
-        break;*/
         case "remove":
             
         break;
@@ -184,8 +143,8 @@ module.exports.run = async (bot, message, args, server, settings) => {
     /**
       * Warn Embeds
       * Warn Vergabe
-      * Warn Benachrichtigung
-      * Custom Warn Punischment   
+      * Warn Benachrichtigung 
+      * Custom Warn Punischment    
     setTimeout(function(){
         let condition = users[uuid].warns;
         let warns;

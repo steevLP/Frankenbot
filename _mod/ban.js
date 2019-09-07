@@ -17,7 +17,6 @@ module.exports.run = async (bot, message, args, server, settings) => {
      * Ob der bannende Nutzer Selbst die Berechtigung hat
      */
 
-    h.insert(server);
 
     //Error handling
     let channelError = error.channelError('ban');
@@ -33,7 +32,8 @@ module.exports.run = async (bot, message, args, server, settings) => {
     //Daten Definition
     let bChannel = message.guild.channels.find(`name`, settings.incedents);
     let bUser = message.guild.member(message.mentions.users.first() || message.guild.members.get(args[1]));
-    let bReason = args.join(" ").slice(31);
+    let bReason;
+    let UUID;
 
     //Errorhandling
     if (!bChannel) return message.channel.send(channelError);
@@ -41,13 +41,17 @@ module.exports.run = async (bot, message, args, server, settings) => {
     if (!message.member.hasPermission("BAN_MEMBERS")) return message.channel.send(invalidPermission);
     if (!bUser) return message.channel.send(userNotFound);
     if (bUser.hasPermission("BAN_MEMBERS")) return message.channel.send(userHasPermisson);
-    if (!bReason) return message.channel.send(invalidReason);
 
     switch (args[0]) {
         default:
             message.channel.send(cmdHelp);
             break;
         case "perma":
+            bReason = args.join(" ").slice(27);
+            UUID = message.guild.id+"-"+bUser.id+"-"+randomize.single('999999999');
+
+            if (!bReason) return message.channel.send(invalidReason);
+
             // Definiert Embed für den Incedents Channel
             let SbanEmbed = new RichEmbed()
                 .setColor(red)
@@ -70,9 +74,27 @@ module.exports.run = async (bot, message, args, server, settings) => {
             // Bannt den Nutzer 
             setTimeout(function () {
                 message.guild.member(bUser).ban(bReason);
-            }, ms('500ms'));
+
+                server.query('INSERT INTO bans SET ?', {
+                    serverid: message.guild.id,
+                    uuid: bUser.id, 
+                    duration: 'infinite',
+                    punid: UUID,
+                    state: 'handled',
+                    channel: message.channel,
+                    operator: message.author.username,
+                    username: bUser.user.username, 
+                    reason: bReason
+                }, (error, results, field) => {
+                    message.guild.member(bUser).ban(bReason);
+                    if(error) throw error;
+                });    
+                h.insert(server, [message.guild.id, bUser.id, UUID, 'Perma Ban', bReason]);        
+            }, 500);
             break;
         case "temp":
+            bReason = args.join(" ").slice(31);
+            if (!bReason) return message.channel.send(invalidReason);
 
         // Definiert Embed für den Incedents Channel
             let StbanEmbed = new RichEmbed()
@@ -88,8 +110,8 @@ module.exports.run = async (bot, message, args, server, settings) => {
             // Definiert das BanEmbed
             let UtbanEmbed = new RichEmbed()
                 .setColor(red)
-                .setTitle('Du wurdest gebannt')
-                .addField("Du wurdest gebannt von", `${message.author}`)
+                .setTitle('Du wurdest temporär gebannt')
+                .addField("Du wurdest gebannt von", message.author)
                 .addField("Uhrzeit", message.createdAt)
                 .addField("Ban Zeit", time.convertToString([args[2]]))
                 .addField("Mit dem Grund", bReason);
@@ -98,7 +120,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
             // Bannt den Nutzer 
             setTimeout(function () {
                 
-                let UUID = message.guild.id+"-"+bUser.id+"-"+randomize.single('999999999');
+                UUID = message.guild.id+"-"+bUser.id+"-"+randomize.single('999999999');
 
                 server.query('INSERT INTO bans SET ?', {
                     serverid: message.guild.id,
@@ -112,7 +134,8 @@ module.exports.run = async (bot, message, args, server, settings) => {
                 }, (error, results, field) => {
                     message.guild.member(bUser).ban(bReason);
                     if(error) throw error;
-                });            
+                });    
+                h.insert(server, [message.guild.id, bUser.id, UUID, 'Temp Ban (' + time.convertToString([args[2]]) + ')', bReason]);        
             }, 1000);
 
             break;  
