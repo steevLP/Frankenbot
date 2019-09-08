@@ -18,7 +18,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
 
     if (!args[0] || args[0] == "help") return message.author.send(setHelp);
 
-    if (!message.member.hasPermission("MANAGE_SERVER")) return message.reply("Dir fehlen die nötigen Rechte!");
+    if (!message.member.hasPermission("MANAGE_GUILD")) return message.reply("Dir fehlen die nötigen Rechte!");
 
     server.query(`SELECT * FROM settings WHERE serverID='${message.guild.id}'`,(error, results, fields) => {
         //If no result gets found
