@@ -14,7 +14,6 @@ var server = sql.createConnection({
     password : db.pw,
     database : db.name
 });
-//let users = require('./json/users.json');
 
 server.connect(function(err) {
     if (err) {
@@ -23,7 +22,9 @@ server.connect(function(err) {
     }
 });
 
-//File Import
+/* ===============
+   * File Import *
+   =============== */
 fs.readdir('./_mod/', (err, files) => {
     if (err) console.log(err);
     let jsfile = files.filter(f => f.split(".").pop() == "js")
@@ -54,15 +55,24 @@ fs.readdir('./_user/', (err, files) => {
     });
 });
 
+/* ================================
+   * First ever running Mechanics *
+   ================================ */
 bot.on("ready", async () => {
     console.log(`[sys-dsc]: ${bot.user.username} ist Fehler frei hochgefahren und nun Online!`);
     console.log(`[sys-dsc]: ${bot.user.username} Ist auf ${bot.guilds.size} Servern Online!`);
     bot.user.setActivity("!help", { type: "PLAYING" });
  
-    //Automated Mechanism
+ /* ======================
+    * Unpunish Mechanics *
+    ====================== */
     setInterval(()=>{
         bot.guilds.forEach(guild => {
             bot.users.forEach(u => {
+
+             /* ============================
+                * Username Update Mechanic *
+                ============================ */
                 server.query({
                     sql: `SELECT * FROM stats WHERE uuid= ?`,
                     timeout: 10000,
@@ -85,7 +95,9 @@ bot.on("ready", async () => {
 
             let conv_date = Number(Date.now());
             
-            //Unbanning Tempbanned Users
+            /* =====================
+               * Unbaning Mechanic *
+               ===================== */
             server.query({
                 sql: `SELECT * FROM bans WHERE state = 'active' AND convert(duration, INT) <= ?`,
                 timeout: 10000,
@@ -94,10 +106,11 @@ bot.on("ready", async () => {
                 if(typeof(bans.length) === undefined) return;
                     if(bans.length <= 0) return; 
                     if(guild.id === bans[0].serverid){
+                        // Unban Expired Punishments
                         guild.unban(bans[0].uuid).then(user => console.log(`Unbanned ${user} from ${guild}`)).catch(console.error());
                     }
 
-                        //Flag Ban as handled
+                        // Flag Ban as handled
                         server.query({
                             sql: `UPDATE bans set state = 'handled' WHERE serverid= ? AND uuid= ?`,
                             timeout: 10000,
@@ -107,7 +120,9 @@ bot.on("ready", async () => {
                         });
             });
 
-            //Unmute Tempmuted Users
+            /* ========================
+               * Unmute Expired mutes *
+               ======================== */
             server.query({
                 sql: `SELECT * FROM mutes WHERE state = 'active' AND convert(duration, INT) <= ?`,
                 timeout: 10000,
@@ -117,11 +132,11 @@ bot.on("ready", async () => {
                 if(results.length <= 0) return;
 
                     if(guild.id === results[0].serverid){
-                        //Find Role and Remove it From User
+                        // Find Role and Remove it From User
                         let muteRole = guild.roles.find(`name`, "🔇Muted");
                         guild.member(results[0].uuid).removeRole(muteRole, results[0].reason).then(user => console.log(`Unmuted ${user} from ${guild}`)).catch(console.error());
                     }
-                    //Flag Mute as handled
+                    // Flag Mute as handled
                     server.query({
                         sql: `UPDATE mutes set state = 'handled' WHERE serverid= ? AND uuid= ?`,
                         timeout: 10000,
@@ -134,41 +149,63 @@ bot.on("ready", async () => {
     },100);
 });
 
-//Spam filter
+
+
+
+/**
+ * =======================
+ * Spam Filter Mechanics *
+ * =======================
+ */
 bot.on('message', async message => {
     if (message.author.bot) return;
-    server.query({
-        sql: 'SELECT * FROM blacklist WHERE serverid= ?',
-        timeout: 10000,
-        values: [message.guild.id]
-    }, (error, results, fields) =>{
-        if(error) throw error;
-        //Blacklist Funktion
-        results.forEach(item => {
-            if (message.content.startsWith("!blacklist")) return;
-            if (message.author.bot) return;
-            if (message.content.toLowerCase().includes(item.word)) {
+        server.query({
+            sql: 'SELECT * FROM blacklist WHERE serverid= ?',
+            timeout: 10000,
+            values: [message.guild.id]
+        }, (error, results, fields) =>{
+            if(error) throw error;
+            
+            /**
+             * ====================
+             * Blacklist Mechanic *
+             * ====================
+             */
+            results.forEach(item => {
 
-                message.delete();
-                message.reply(`ein wort in deiner nachricht ist auf diesem discord gesperrt!`).then(msg => {
-                    msg.delete(5000);
-                });
-            }
+                // Filter if Message author is a bot or Message is the Blacklist Command
+                if (message.content.startsWith("!blacklist")) return;
+                if (message.author.bot) return;
+                if (message.content.toLowerCase().includes(item.word)) {
+
+                    // If Message Neither is comming from Bots or the Blacklist Command
+                    // Remove it
+                    message.delete();
+                    message.reply(`ein wort in deiner nachricht ist auf diesem discord gesperrt!`).then(msg => {
+                        msg.delete(5000);
+                    });
+                }
+            });
         });
-    });
     if (message.author.bot) return;
     if (message.channel.type === "dm") return;
 
-    //Settings Creation on handling of the nospam filter
+    /**
+     * =======================
+     * Antispam and Settings *
+     * =======================
+     */
+
+     // Select All Settings for the Specific Server
     server.query({
         sql: `SELECT * FROM settings WHERE serverid= ?`,
         timeout:10000,
         values:[message.guild.id]
     },(error, results, fields) => {
 
-        //If no result gets found
+        // If no result gets found
         if(results.length == 0){
-            //Create new Settings for that server
+            // Create new Settings for that server
             server.query('INSERT INTO settings SET ?', {
                 spam: "general",
                 incedents: "general",
@@ -183,23 +220,34 @@ bot.on('message', async message => {
                 return;
             });            
         }else{
-            //Antispam
-            if (results[0].nospam === "on") {
-
+            /**
+             * ==========
+             * Antispam *
+             * ==========
+             */       
+            if (results[0].noSpam === "on") {
+            
                 let msg = message;
+            
                 if (msg.content) {
+
+                    // Stores Message as String
                     let filter = m => m.author.id === msg.author.id;
 
+                    // Compares Next message from that User with the Variable
                     message.channel.awaitMessages(filter, {
                             max: 1
-                        })
-                        .then(msg2 => {
+                        }).then(msg2 => {
                             if (msg.content === msg2.first().content && msg.author.id === msg2.first().author.id) {
+                                
+                                // Are Both the new and the last Message equal Remove the Last one
                                 message.delete();
-                                message.reply('Hey bitte Spam nicht so sehr!').then(msg => { msg.delete(1000);});
+
+                                //And Notify the User
+                                message.reply('Hey bitte Spam nicht so sehr!').then(msg => { msg.delete(1000); });
                             }
                         }).catch(collected => console.log(collected.size));
-                }
+                }   
             }
         }
     });
