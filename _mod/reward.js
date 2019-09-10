@@ -11,14 +11,15 @@ module.exports.run = async (bot, message, args, server, settings) => {
     
     let reward = file.import('./json/rewards.json');
     //Permission Check
-    if(!message.member.hasPermission("KICK_MEMBERS")) return message.channel.send(invalidPermission);    
+    if(!message.member.hasPermission("MANAGE_GUILD")) return message.channel.send(invalidPermission);    
     message.delete();
 
     if(args[0] === 'add'){
-        if (!reward[message.guild.id].args[1]) {
-            reward[message.guild.id].args[1] = args[2];
-        }
-        file.save('./json/rewards.json', reward);   
+        server.query({
+            sql:"SELECT * FROM rewards WHERE serverid= ?",
+            timeout: 10000,
+            values: [message.guild.id]
+        })
     }else if(args[0] === 'edit'){
         if(!reward[message.guild.id].args[1]){
             return message.channel.send('Unbekannter Reward');

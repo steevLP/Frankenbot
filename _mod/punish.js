@@ -6,7 +6,7 @@ const { file } = require('watchbotapi');
 let p;
 
 module.exports.run = async (bot, message, args, server, settings) => {
-    if (!message.member.hasPermission("KICK_MEMBERS")) return message.channel.send(invalidPermission);
+    if (!message.member.hasPermission("MANAGE_GUILD")) return message.channel.send(invalidPermission);
     message.delete();
 
     //error messaging

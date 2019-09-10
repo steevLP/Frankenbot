@@ -205,6 +205,7 @@ bot.on('message', async message => {
 
         // If no result gets found
         if(results.length == 0){
+
             // Create new Settings for that server
             server.query('INSERT INTO settings SET ?', {
                 spam: "general",
@@ -332,6 +333,7 @@ bot.on('message', async message => {
                     });
 
                     let reward = file.import('./json/rewards.json');
+                    
                     //rewards Erstellung
                     if (!reward[message.guild.id]) {
                         reward[message.guild.id] = {
@@ -358,9 +360,13 @@ bot.on('message', async message => {
         timeout: 10000,
         values: [message.guild.id]
     },(error, results, fields) => {
+
         if(results.length == 0){
+
             return message.channel.send('Einstellungen wurden eingerichtet! \n Bitte versuche es erneut!');
+
         }else if(results.length > 0){
+
             //Command Handler & Message Handler
             let prefix = results[0].prefix;
 
