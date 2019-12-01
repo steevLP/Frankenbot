@@ -22,8 +22,6 @@ module.exports.run = async (bot, message, args, server, settings) => {
                 }
 
                 statsEmbed.setFooter(`Die ganze Liste kann auf [LINK] gefunden werden`);
-    
-
 
             permChannel.send(statsEmbed);
         });

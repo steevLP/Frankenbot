@@ -1,7 +1,7 @@
 const {file, randomize} = require('watchbotapi');
 const {RichEmbed} = require('discord.js');
 const ms = require('ms');
-const {red, yellow} = require('../json/botconfig.json');
+const {red, yellow, green} = require('../json/botconfig.json');
 
 let error = require('../_essentials/error.js');
 
@@ -35,7 +35,7 @@ module.exports.run = async (bot, message, args, server, settings) => {
             }
         }
         
-        let embed = RichEmbed()
+        let embed = new RichEmbed()
         .setColor(green)
         display();
     }

@@ -1,11 +1,15 @@
 const Discord = require("discord.js");
+const {config} = require("dotenv");
 const botconfig = require('./json/botconfig.json');
 const token = botconfig.token;
 const { file, randomize } = require('watchbotapi');
-const bot = new Discord.Client({ disableEveryone: true });
 const fs = require('fs');
 const sql = require('mysql');
 const db = require('./json/sql.json');
+
+const bot = new Discord.Client({ disableEveryone: true });
+config({ path: __dirname + "/.env" });
+
 
 bot.commands = new Discord.Collection();
 var server = sql.createConnection({
@@ -61,16 +65,23 @@ fs.readdir('./_user/', (err, files) => {
 bot.on("ready", async () => {
     console.log(`[sys-dsc]: ${bot.user.username} ist Fehler frei hochgefahren und nun Online!`);
     console.log(`[sys-dsc]: ${bot.user.username} Ist auf ${bot.guilds.size} Servern Online!`);
-    bot.user.setActivity("!help", { type: "PLAYING" });
- 
- /* ======================
-    * Unpunish Mechanics *
-    ====================== */
+
+    bot.user.setPresence({
+        status: "online",
+        game: {
+            name: "!help",
+            type: "WATCHING"
+        }
+    });
+    
+ /* =======================
+    * Automated Mechanics *
+    ======================= */
     setInterval(()=>{
         bot.guilds.forEach(guild => {
             bot.users.forEach(u => {
 
-             /* ============================
+            /*  ============================
                 * Username Update Mechanic *
                 ============================ */
                 server.query({
@@ -131,26 +142,23 @@ bot.on("ready", async () => {
                 if(typeof(results.length) === undefined){ return; }
                 if(results.length <= 0) return;
 
-                    if(guild.id === results[0].serverid){
-                        // Find Role and Remove it From User
-                        let muteRole = guild.roles.find(`name`, "🔇Muted");
-                        guild.member(results[0].uuid).removeRole(muteRole, results[0].reason).then(user => console.log(`Unmuted ${user} from ${guild}`)).catch(console.error());
-                    }
-                    // Flag Mute as handled
-                    server.query({
-                        sql: `UPDATE mutes set state = 'handled' WHERE serverid= ? AND uuid= ?`,
-                        timeout: 10000,
-                        values: [guild.id, results[0].uuid]
-                    }, (error, results, fields) => {
-                        if(error) throw error;
-                    });
+                if(guild.id === results[0].serverid){
+                    // Find Role and Remove it From User
+                    let muteRole = guild.roles.find(`name`, "🔇Muted");
+                    guild.member(results[0].uuid).removeRole(muteRole, results[0].reason).then(user => console.log(`Unmuted ${user} from ${guild}`)).catch(console.error());
+                }
+                // Flag Mute as handled
+                server.query({
+                    sql: `UPDATE mutes set state = 'handled' WHERE serverid= ? AND uuid= ?`,
+                    timeout: 10000,
+                    values: [guild.id, results[0].uuid]
+                }, (error, results, fields) => {
+                    if(error) throw error;
+                });
             });
         });
     },100);
 });
-
-
-
 
 /**
  * =======================
@@ -180,8 +188,9 @@ bot.on('message', async message => {
 
                     // If Message Neither is comming from Bots or the Blacklist Command
                     // Remove it
-                    message.delete();
-                    message.reply(`ein wort in deiner nachricht ist auf diesem discord gesperrt!`).then(msg => {
+
+                    message.delete(message.content.replace(item.word, "blank"))
+                        message.reply(`ein wort in deiner nachricht ist auf diesem discord gesperrt!`).then(msg => {
                         msg.delete(5000);
                     });
                 }
@@ -215,7 +224,8 @@ bot.on('message', async message => {
                 noSpam: "off",
                 serverName: message.guild.name,
                 serverID: message.guild.id,
-                prefix: botconfig.prefix
+                prefix: botconfig.prefix,
+                can_gain_xp: 1
             }, (error, results, field) => {
                 if(error) throw error;
                 return;
@@ -231,6 +241,24 @@ bot.on('message', async message => {
                 let msg = message;
             
                 if (msg.content) {
+
+                    // Duplication prevention
+                    /**const args = message.content.split(/ +/g);
+                    console.log(args.length);
+                    let hasBeenSay = false;
+
+                    if(!hasBeenSay){
+                        for(let i = 0; i < args.length; i++){
+                            args.forEach(w => {
+                                if(args[i] === w){
+                                    console.log(w);
+                                    message.reply("sich wiederholende nachrichten / Worte sind untersagt");
+                                    break;
+                                }
+                            })
+                        }
+                        hasBeenSay = true;
+                    }*/
 
                     // Stores Message as String
                     let filter = m => m.author.id === msg.author.id;
@@ -254,106 +282,119 @@ bot.on('message', async message => {
     });
 
     //User Stats
-
-    //Select everything from stats
     server.query({
-        sql: `SELECT * FROM stats WHERE serverid= ? AND uuid= ?`,
-        timeout: 100000,
-        values:[message.guild.id, message.author.id]
-    }, (error, results, field) => {
-        if(error) throw error;
-
-        //If no result gets found
-        if(results.length == 0){
-            //Create the new Settings for that Server
-            server.query('INSERT INTO stats SET ?', {
-                warns: 0,
-                level: 1,
-                xp: 0,
-                msgs:1,
-                username: message.author.username,
-                serverid: message.guild.id,
-                uuid: message.author.id
-            }, (error, results, fields) => {
-                if(error) throw error;
-            });            
-        }else{
-
-            //Leveling stats
-            /**
-             * @param {int} xpAdd A Randomized amount of xp that get added to the users account.
-             * @param {int} curxp The Users current Xp amount.
-             * @param {int} msgs The users current amount of written msgs from start of the users stats recording using frankenbot.
-             * @param {int} curlvl The Users current Level.
-             * @param {int} nxtLvl The amount of XP what is needed to reach next level.
-             * Updated Stats
-             * @param {int} newXP the updated amount of XP.
-             * @param {int}newMsgs the updated amount of msgs <- gets fired on each message the user emits.
-             */
-
-            //Data Definition
-            let xpAdd = randomize.multiple(7, 1);
-            let curxp = results[0].xp;          
-            let msgs = results[0].msgs;
-            let curlvl = results[0].level;
-            let nxtLvl = results[0].level * (curlvl * 300);
-
-            //New Updated Stats
-            var newXP = curxp + xpAdd;
-            var newMsgs = msgs + 1;
-
-            //Update MSGS And XP
+        sql: `SELECT * FROM settings WHERE serverid= ?`,
+        timeout:10000,
+        values:[message.guild.id]
+    },(error, results, fields) => {
+        if(results.length == 0) return;
+        if(results[0].can_gain_xp === 1){
+            //Select everything from stats
             server.query({
-                sql: `UPDATE stats set xp= ?, msgs= ? WHERE serverid= ? AND uuid= ?`,
-                timeout: 10000,
-                values: [newXP,newMsgs,message.guild.id,message.author.id]
-            },(error, results, fields) => {
+                sql: `SELECT * FROM stats WHERE serverid= ? AND uuid= ?`,
+                timeout: 100000,
+                values:[message.guild.id, message.author.id]
+            }, (error, results, field) => {
                 if(error) throw error;
-            });
 
-            if (nxtLvl <= curxp) {
-                let newlvl = curlvl + 1;
+                //If no result gets found
+                if(results.length == 0){
+                    //Create the new Settings for that Server
+                    server.query('INSERT INTO stats SET ?', {
+                        warns: 0,
+                        level: 1,
+                        xp: 0,
+                        msgs:1,
+                        username: message.author.username,
+                        serverid: message.guild.id,
+                        uuid: message.author.id
+                    }, (error, results, fields) => {
+                        if(error) throw error;
+                    });            
+                }else{
 
-                //Update Level
-                server.query({
-                    sql:`UPDATE stats SET level= ? WHERE serverid= ? AND uuid= ?`,
-                    timeout: 10000,
-                    values: [newlvl, message.guild.id, message.author.id]
-                },(error, results, fields) => {
-                    if(error) throw error;
-            
-                    //Build and Send Level UP Embed
-                    let lvlup = new Discord.RichEmbed()
-                        .setTitle("Level UP ➕ ")
-                        .setColor(botconfig.green)
-                        .addField("Neues Level Erreicht!!", `Dein neues Level ist nun: ${newlvl}`);
-    
-                    message.channel.send(lvlup).then(msg => {
-                        msg.delete(5000)
+                    //Leveling stats
+                    /**
+                     * @param {int} xpAdd A Randomized amount of xp that get added to the users account.
+                     * @param {int} curxp The Users current Xp amount.
+                     * @param {int} msgs The users current amount of written msgs from start of the users stats recording using frankenbot.
+                     * @param {int} curlvl The Users current Level.
+                     * @param {int} nxtLvl The amount of XP what is needed to reach next level.
+                     * Updated Stats
+                     * @param {int} newXP the updated amount of XP.
+                     * @param {int}newMsgs the updated amount of msgs <- gets fired on each message the user emits.
+                     */
+
+                    //Data Definition
+                    let xpAdd = randomize.multiple(7, 1);
+                    let curxp = results[0].xp;          
+                    let msgs = results[0].msgs;
+                    let curlvl = results[0].level;
+                    let nxtLvl = results[0].level * (curlvl * 300);
+
+                    //New Updated Stats
+                    var newXP = curxp + xpAdd;
+                    var newMsgs = msgs + 1;
+
+                    //Update MSGS And XP
+                    server.query({
+                        sql: `UPDATE stats set xp= ?, msgs= ? WHERE serverid= ? AND uuid= ?`,
+                        timeout: 10000,
+                        values: [newXP,newMsgs,message.guild.id,message.author.id]
+                    },(error, results, fields) => {
+                        if(error) throw error;
                     });
 
-                    let reward = file.import('./json/rewards.json');
+                    if (nxtLvl <= curxp) {
+                        let newlvl = curlvl + 1;
+
+                        //Update Level
+                        server.query({
+                            sql:`UPDATE stats SET level= ? WHERE serverid= ? AND uuid= ?`,
+                            timeout: 10000,
+                            values: [newlvl, message.guild.id, message.author.id]
+                        },(error, results, fields) => {
+                            if(error) throw error;
                     
-                    //rewards Erstellung
-                    if (!reward[message.guild.id]) {
-                        reward[message.guild.id] = {
-                            reward: []
-                        };
-                        file.save('./json/rewards.json', reward);
-                        return;
+                            //Build and Send Level UP Embed
+                            let lvlup = new Discord.RichEmbed()
+                                .setTitle("Level UP ➕ ")
+                                .setColor(botconfig.green)
+                                .addField("Neues Level Erreicht!!", `Dein neues Level ist nun: ${newlvl}`);
+            
+                            message.channel.send(lvlup).then(msg => {
+                                msg.delete(5000)
+                            });
+
+                            //rewards Funktion
+                            let u = message.member;
+                            //SELECT ALL FROM USERS
+                            server.query({
+                                sql: `SELECT * FROM stats WHERE serverid= ? AND uuid= ?`,
+                                timeout: 100000,
+                                values:[message.guild.id, message.author.id]
+                            }, (error, results, fields) => {
+                                //SELECT EVERYTHING IN THAT LEVEL
+                                server.query({
+                                    sql: "SELECT * FROM rewards WHERE serverid=? AND level= ?",
+                                    timeout: 5000,
+                                    value: [message.guild.id, res[0].level]
+                                }, (error, res, fields) => {
+                                    if(results.length === 1){
+                                        let role = message.guild.roles.find(`name`, res[0].rank);
+                                        u.addRole(role.id);
+                                    }
+                                })
+                            });
+                            //------------
+                        });
                     }
-            
-                    //rewards Funktion
-                    let u = message.member;
-            
-                    if (reward[message.guild.id].hasOwnProperty(curlvl)) {
-                        let role = message.guild.roles.find(`name`, reward[message.guild.id][curlvl]);
-                        u.addRole(role.id);
-                    };
-                });
-            }
-        }
-    });
+                }
+            });
+        }else{
+    return;
+    }
+});
 
     server.query({
         sql: `SELECT * FROM settings WHERE serverid= ?`,
@@ -363,7 +404,7 @@ bot.on('message', async message => {
 
         if(results.length == 0){
 
-            return message.channel.send('Einstellungen wurden eingerichtet! \n Bitte versuche es erneut!');
+            return message.channel.send('Einstellungen wurden eingerichtet! \nBitte versuche es erneut!');
 
         }else if(results.length > 0){
 
@@ -386,4 +427,5 @@ bot.on('message', async message => {
     });
 
 });
-bot.login(token);
+
+bot.login(process.env.TOKEN);
