@@ -347,6 +347,24 @@ bot.on('message', async message => {
 
                     if (nxtLvl <= curxp) {
                         let newlvl = curlvl + 1;
+                        let u = message.author;
+                        // Reward Handling
+                        server.query({
+                            sql:`SELECT * FROM rewards WHERE serverid= ? AND level= ?`,
+                            timeout: 10000,
+                            values: [message.guild.id, newlvl]
+                        },(error, results, fields) => {
+                            console.log(results);
+                            if(results != undefined && results.length === 1){
+        
+                                message.member.addRole(message.guild.roles.find("name", results[0].rank));
+                                let rewardEmbed = new Discord.RichEmbed()
+                                .setColor(botconfig.green)
+                                .addField("Gratuliere", `Da du level ${newlvl} erreicht hast, bekommst du ${results[0].rank}`);
+
+                                message.channel.send(rewardEmbed);
+                            }
+                        });
 
                         //Update Level
                         server.query({
@@ -365,28 +383,6 @@ bot.on('message', async message => {
                             message.channel.send(lvlup).then(msg => {
                                 msg.delete(5000)
                             });
-
-                            //rewards Funktion
-                            let u = message.member;
-                            //SELECT ALL FROM USERS
-                            server.query({
-                                sql: `SELECT * FROM stats WHERE serverid= ? AND uuid= ?`,
-                                timeout: 100000,
-                                values:[message.guild.id, message.author.id]
-                            }, (error, results, fields) => {
-                                //SELECT EVERYTHING IN THAT LEVEL
-                                server.query({
-                                    sql: "SELECT * FROM rewards WHERE serverid=? AND level= ?",
-                                    timeout: 5000,
-                                    value: [message.guild.id, res[0].level]
-                                }, (error, res, fields) => {
-                                    if(results.length === 1){
-                                        let role = message.guild.roles.find(`name`, res[0].rank);
-                                        u.addRole(role.id);
-                                    }
-                                })
-                            });
-                            //------------
                         });
                     }
                 }

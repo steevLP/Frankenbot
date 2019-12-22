@@ -8,7 +8,7 @@ module.exports.run = async (bot, message, args) => {
     let embed = new RichEmbed()
     .setColor(green)
     .setThumbnail(bIcon)
-    .addField('Watchbot sagt', botmessage);
+    .addField('Frankenbot sagt', botmessage);
 
     message.channel.send(embed);
 }
