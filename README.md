@@ -13,4 +13,4 @@ Free forever, at leaste the non premium features will be.
 1. Custom Commands
 2. Automated Poll Feature
 3. A fully featured controll panel (Website)
-4. and probably way more
+and probably way more
