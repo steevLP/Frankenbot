@@ -1,8 +1,7 @@
 const Discord = require("discord.js");
 const {config} = require("dotenv");
 const botconfig = require('./json/botconfig.json');
-const token = botconfig.token;
-const { file, randomize } = require('watchbotapi');
+const { randomize } = require('watchbotapi');
 const fs = require('fs');
 const sql = require('mysql');
 const db = require('./json/sql.json');
@@ -10,8 +9,8 @@ const db = require('./json/sql.json');
 const bot = new Discord.Client({ disableEveryone: true });
 config({ path: __dirname + "/.env" });
 
-
 bot.commands = new Discord.Collection();
+
 var server = sql.createConnection({
     host     : db.host,
     user     : db.user,
