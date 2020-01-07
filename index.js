@@ -80,9 +80,34 @@ bot.on("ready", async () => {
         bot.guilds.forEach(guild => {
             bot.users.forEach(u => {
 
+            /*  ======================================= *
+                * WebInterface Account Management       *
+                * Manages Username                      *
+                * The Users Permission Set              *
+                * Updates The Database if changes occur *
+                ======================================= */
+
             /*  ============================
                 * Username Update Mechanic *
                 ============================ */
+                server.query({
+                    sql: `SELECT * FROM user WHERE uuid= ?`,
+                    timeout: 10000,
+                    values:[u.id]
+                }, (error, results, fields) => {
+                    for(let i = 0; i < results.length; i++){
+                        if(results[i].username != u.tag){
+                            server.query({
+                                sql: "UPDATE user set username= ? WHERE uuid= ?",
+                                timeout: 10000,
+                                values: [u.tag, u.id]
+                            }, (error, result, fields) => {
+                                if(error) throw error;
+                            })
+                        }
+                    }
+                });
+
                 server.query({
                     sql: `SELECT * FROM stats WHERE uuid= ?`,
                     timeout: 10000,
