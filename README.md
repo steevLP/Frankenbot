@@ -10,8 +10,8 @@ unnecessary! The Bot has lot's of usefull Features implemented
 1. User XP and Level tracking
 2. Level based Role Assignment (Rewards)
 3. Basic Message Filter
-4. Both permanen and temporary Kick ban and mute Functions
-5. A settings Command to controll the entire Bot from inside the Server
+4. Both permanent and temporary Kick, Ban and Mute Functions
+5. A Settings Command to controll the entire Bot from inside the Server
 6. A top Ten list Command for Users to compare server Activity
 7. A History for Moderators to track a users Punishments
 and a lot more
