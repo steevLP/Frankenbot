@@ -17,8 +17,8 @@ unnecessary! The Bot has lot's of usefull Features implemented
 and a lot more
 
 ## how to run it
-Configure your Databaseserver Connection in `json/sql.json` to fit your MySQL Server.
-Add a .env File add your bots application token that you can obtain from the discord developer page in it.
-Create the .env with this format `TOKEN=<token>`.
-install nodejs dependencies `npm install`
+Configure your Databaseserver Connection in `json/sql.json` to fit your MySQL Server.  
+Add a .env File add your bots application token that you can obtain from the discord developer page in it.  
+Create the .env with this format `TOKEN=<token>`.  
+install nodejs dependencies `npm install`  
 start the bot itself `node index`
